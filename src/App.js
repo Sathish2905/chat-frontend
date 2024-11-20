@@ -1,25 +1,45 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from 'react';
+import ChatList from './components/ChatList';
+import MessageArea from './components/MessageArea';
+import InputBox from './components/InputBox';
+import socket from './utils/socket';
 
-function App() {
+const App = () => {
+  const [users, setUsers] = useState([]);
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    // Listen for new users
+    socket.on('userList', (userList) => {
+      setUsers(userList);
+    });
+
+    // Listen for new messages
+    socket.on('receiveMessage', (message) => {
+      setMessages((prevMessages) => [...prevMessages, message]);
+    });
+
+    return () => {
+      socket.off('userList');
+      socket.off('receiveMessage');
+    };
+  }, []);
+
+  const handleSendMessage = (text) => {
+    const message = { sender: 'You', text };
+    setMessages((prevMessages) => [...prevMessages, message]);
+    socket.emit('sendMessage', message);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{ display: 'flex', height: '100vh' }}>
+      <ChatList users={users} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <MessageArea messages={messages} />
+        <InputBox onSendMessage={handleSendMessage} />
+      </div>
     </div>
   );
-}
+};
 
 export default App;
